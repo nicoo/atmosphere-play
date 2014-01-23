@@ -19,12 +19,16 @@ import org.atmosphere.cpr.AtmosphereRequest;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import play.Play;
 import play.mvc.Http;
 
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import javax.servlet.http.Cookie;
 
 public class AtmosphereUtils {
 
@@ -83,6 +87,7 @@ public class AtmosphereUtils {
             logger.trace("", e);
         }
 
+
         int port = uri == null ? 0 : uri.getPort();
         String uriString = uri == null ? request.remoteAddress() : uri.toString();
         String host = uri == null ? request.remoteAddress() : uri.getHost();
@@ -91,6 +96,7 @@ public class AtmosphereUtils {
                 .requestURL(u)
                 .pathInfo(url.substring(l))
                 .headers(getHeaders(request))
+                .cookies(getCookies(request))
                 .method(method)
                 .contentType(ct)
                 .destroyable(false)
@@ -134,5 +140,25 @@ public class AtmosphereUtils {
         }
 
         return headers;
+    }
+
+    private static String playCookieName() {
+       return Play.application().configuration().getString("session.cookieName", "PLAY_SESSION");
+    }
+
+    private static String COOKIE_NAME = playCookieName();
+
+    public static Set<Cookie> getCookies(final Http.RequestHeader header) {
+        Set<Cookie> cookies = new HashSet<Cookie>();
+        Http.Cookie c = header.cookie(COOKIE_NAME);
+        if(c != null){
+            Cookie nc = new Cookie(COOKIE_NAME, c.value());
+            if(c.domain() != null) nc.setDomain(c.domain());
+            if(c.path() != null) nc.setPath(c.path());            
+            if(c.maxAge() != null) nc.setMaxAge(c.maxAge());
+            nc.setSecure(c.secure());
+            cookies.add(nc);
+        }
+        return cookies;
     }
 }
